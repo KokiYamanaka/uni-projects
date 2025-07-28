@@ -1,6 +1,7 @@
 # uni-projects
 
 ## Project descriptions 
+Click link below to get reports 
 Well compiled 
 - [Machine Learning](https://github.com/KokiYamanaka/uni-projects/blob/main/machine%20learning/paper_project_comp4980_01.pdf) : Determining the Optimal Regression Model for Amen Housing Dataset
 - [Mathematical optimization](https://github.com/KokiYamanaka/uni-projects/blob/main/mathematical%20optimization/project-report.pdf)  : maximize a farmer’s profit with several resource constraints.
