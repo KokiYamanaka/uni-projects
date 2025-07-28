@@ -1,0 +1,338 @@
+---
+title: "STAT 4990 Final Project - Comparative Analysis of Prophet and EWMA Models"
+author: "Alisa Dmitrieva"
+date: "2023-12-03"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tsibble)
+library(fpp3)
+library(ggplot2)
+library(fable)
+library(forecast)
+library(tidyr)
+library(quantmod)
+library(prophet)
+library(fabletools)
+```
+
+\newpage
+
+# Downloading and preparing the data
+
+```{r}
+# The training dat set will use 3 years of data
+#   and the testing data set will use approximately 2 moths of data
+start.date = '2020-10-01' # starting date of stock
+end.date = '2023-11-28' # ending date of stock
+
+# Downloading the Dow Jones Index (DJI) data from Yahoo finance using the `quantmod` package
+getSymbols("^DJI", src = "yahoo", from = start.date, to = end.date, auto.assign = TRUE)
+
+# Extracting the closing price information
+DJI.ClosingPrice <- DJI$DJI.Close
+
+# Creating the training and testing samples
+N <- length(DJI.ClosingPrice)
+n <- 40 # 40 days (2 months) is the testing sample size
+training.sample <- DJI.ClosingPrice[1:(N-n)] # training sample
+
+# Plotting the DJI daily closing data
+plot(DJI.ClosingPrice, col = "blue",
+     xlab="Date",
+     main="Daily Closing Price (USD) of the DJI")
+```
+
+\newpage
+
+# Forecasting with the Prophet model
+
+```{r}
+# Preparing the training sample for fitting the Prophet model
+DJI.train <- as.data.frame(training.sample)
+DJI.train <- cbind(ds = rownames(DJI.train), DJI.train)
+rownames(DJI.train ) <- 1:nrow(DJI.train)
+colnames(DJI.train ) <- c ("ds", "y")
+
+# Checking the training sample
+head(DJI.train)
+```
+
+```{r}
+# Fitting the Prophet model
+DJI.prophet <- prophet(DJI.train)
+
+# Preparing to make Forecasts
+DJI.future <- make_future_dataframe(DJI.prophet, periods = n)
+head(DJI.future)
+```
+
+```{r}
+# Creating forecasts using the Prophet model
+forecast.prophet <- predict(DJI.prophet, DJI.future)
+head(forecast.prophet)
+```
+
+\newpage
+
+```{r}
+############################################################################
+## Forecasting the Daily Closing Price of the DJI Using the Prophet Model ##
+############################################################################
+
+# Plotting the forecasts from the Prophet model
+plot(DJI.prophet, forecast.prophet,
+     xlab="Date",
+     ylab="Daily Closing Price of the DJI (USD)")
+```
+
+### Comments on the plot of the Prophet model forecasts:
+
+  The Prophet model appears to be a reasonable fit for the data. The forecasts produced by the Prophet model appear to capture the trend of the data in the testing data set (positive trend). Additionally, the forecasts produced by the Prophet model appear to have relatively low variance. 
+  
+\newpage
+  
+```{r}
+#################################
+## Prophet model decomposition ##
+#################################
+
+# Extracting and plotting the Prophet model components
+prophet_plot_components(DJI.prophet, forecast.prophet)
+```
+
+### Comments on the Prophet model decomposition:
+
+The Prophet model identified an overall positive trend, a weekly trend, and a yearly trend. 
+  
+  The overall trend shows that the value of the Dow Jones Index (DJI) has been generally increasing during the past 3 years, with the exception of a dip in the middle of 2022. This trend predicts that the value of the DJI will continue increasing over time. This is probably true - the value of the DJI will likely continue to increase along with rising inflation and increasing market caps of the stocks included in the DJI. However, it is always possible that the DJI will decrease in the future due to war, natural disasters, or other unforseen events. The trend identified by the Prophet model has no way of accounting for this.
+  
+  The weekly trend shows that the closing price of the DJI is highest on weekdays and lowest on the weekends. This is due to the fact that the markets are closed on weekends. This trend is likely to continue indefinitely. 
+  
+  The yearly trend is the least appropriate of all trends identified by the Prophet model. There is no way of predicting that the value of the DJI will continue to increase or decrease in certain months as it has for the last 3 years. The identification of a yearly trend is therefore likely to lead to misleading and inaccurate forecasts. 
+  
+\newpage
+  
+```{r}
+# Calculating the sign correlation of the the daily closing price of the DJI
+
+# Sign correlation function
+rho.cal<-function(X)
+{
+  rho.hat<-cor(sign(X-mean(X)), X-mean(X))
+  return(rho.hat)
+}
+
+# Calculating the sign correlation
+rho_cal<-apply(as.matrix(DJI.ClosingPrice), MARGIN=2, FUN=rho.cal)
+
+# Sign correlation value
+rho_cal
+```
+
+### Comments on the sign correlation value:
+
+  The sign correlation value indicates that the daily closing price of the DJI during the dates specified above follows a normal distribution.
+  
+\newpage
+  
+# Forecasting with an EWMA model
+
+```{r}
+# Fitting an EWMA model using the ETS function
+DJI.ets = ets(training.sample$DJI.Close)
+summary(DJI.ets)
+```
+
+### Comments on the EWMA(ETS) model identified:
+
+  The optimal alpha identified here is 0.9999.
+  
+  The MASE value indicates that the ETS model performs marginally better than the naive model.
+  
+\newpage
+  
+```{r}
+# Plotting the ETS model forecasts for the next 2 months
+plot(forecast(DJI.ets, h=n),
+  xlab = "Day (with training data from 2020-10-01 to 2023-09-29)",
+  ylab = "Daily Closing Price of the DJI (USD)",
+  main = "ETS Forecasts for the Daily Closing Price of the DJI")
+```
+
+### Comments on the plot of the ETS model forecasts:
+
+  The ETS model forecasts appear to predict no trend, resembling the naive model forecasts. Additionally, The ETS model produces forecasts with a lot of variance.
+  
+\newpage
+  
+# Comparing the Prophet and ETS models
+
+```{r}
+# Preparing the data to compare the Prophet and ETS models using fable
+
+# Creating a date variable
+DJI <- zoo::fortify.zoo(DJI)
+DJI <- DJI %>% rename(c("Date" = "Index", "Close" = "DJI.Close"))
+
+# Creating a tsibble object
+DJI <- as_tsibble(DJI, index = Date)
+
+# Re-indexing to remove the missing values
+DJI <- DJI |>
+mutate(day = row_number()) |>
+update_tsibble(index = day, regular = TRUE)
+
+# Creating the training set for the DJI
+DJI.train2 <- DJI |> filter(yearmonth(Date) <= yearmonth("2023 Sept"))
+
+# Checking the training set
+head(DJI.train2)
+```
+
+\newpage
+
+## Prophet model residual diagnostics 
+
+```{r}
+# IMPORTANT: The fable.prophet library overwrites the original prophet library!
+library(fable.prophet) 
+
+# Fitting the Prophet model
+fit.prophet <- DJI.train2 |> model(prophet(Close)) 
+
+# Plotting the residuals
+gg_tsresiduals(fit.prophet)
+```
+
+### Comments on the residuals of the Prophet model:
+
+  The residuals of the Prophet model are clearly not white noise. The ACF plot indicates significant autocorrelation and the histogram appears to have a long left tail. 
+
+\newpage
+
+```{r}
+# Calculating the sign correlation of the Prophet model residuals
+rho_cal_prophet.resid <-apply(as.matrix(resid(fit.prophet)$.resid), MARGIN=2, FUN=rho.cal)
+
+# Sign correlation value
+rho_cal_prophet.resid
+```
+
+### Comments on the sign correlation value:
+
+  The sign correlation value indicates that the residuals of the Prophet model follow a t-distribution.
+
+```{r}
+# Ljung-Box test for autocorrelation
+augment(fit.prophet) |> features(.innov, ljung_box, lag=10)
+```
+
+### Comments on the Ljung-Box test:
+
+  The p-value is 0, indicating that we may reject the null hypothesis and thus assume that the residuals of the Prophet model are not white noise.
+  
+\newpage
+
+## ETS model residual diagnostics
+
+```{r}
+# Fitting the ETS model
+fit.ets <- DJI.train2 |> model(ETS(Close)) 
+
+# Plotting the residuals
+gg_tsresiduals(fit.ets)
+```
+
+### Comments on the residuals of the ETS model:
+
+  The residuals of the ETS model resemble white noise. The ACF plot indicates no significant autocorrelation. The histogram appears to be centered around a mean of 0 with no positive or negative skew. 
+  
+\newpage
+  
+```{r}
+# Calculating the sign correlation of the ETS model residuals
+rho_cal_ets.resid <-apply(as.matrix(resid(fit.ets)$.resid), MARGIN=2, FUN=rho.cal)
+
+# Sign correlation value
+rho_cal_ets.resid
+```
+
+### Comments on the sign correlation value:
+
+  The sign correlation value indicates that the residuals of the ETS model follow a t-distribution.
+  
+```{r}
+# Ljung-Box test for autocorrelation
+augment(fit.ets) |> features(.innov, ljung_box, lag=10)
+```
+
+### Comments on the Ljung-Box test:
+
+  The p-value is quite large, indicating that we fail to reject the null hypothesis. Thus, we may assume that the residuals from the ETS model are white noise.
+
+\newpage
+
+# Further comparative analysis of the Prophet and ETS models
+
+```{r}
+# Fitting both the Prophet and ETS models using fable
+DJI.fit <- DJI.train2 |>
+  model(
+    ets = ETS(Close),
+    prophet = prophet(Close)
+  ) 
+
+# Comparing the training set accuracy of both the Prophet and ETS models
+accuracy(DJI.fit)
+```
+
+### Comments on the accuracy of the models on the training data:
+  
+  The ETS model is better than the Prophet model on all values except for ME.
+  
+```{r}
+# Comparing the accuracy of forecasts from the ETS and Prophet models
+DJI.fc <- DJI.fit |> forecast(h = n)
+DJI.fc |> accuracy(DJI)
+```
+
+### Comments on the accuracy of the models on the testing data:
+  
+  The ETS model appears to be the clear winner on all accuracy measurements. 
+  
+\newpage
+
+```{r}
+# Comparing the plots of the Prophet and ETS model forecasts
+DJI.fc |> autoplot(DJI) + labs(x = "Day", y = "Daily Closing Price of the DJI (USD)")
+```
+
+### Comments on the plot of the forecasts of both models:
+  
+  When comparing both models together on the plot, it is clear the the Prophet model produces forecasts with less variance than the ETS model. The Prophet model forecasts also appear to capture the trend of the data more accurately.
+  
+  The Prophet model forecasts on this plot (produced by the "fable.prophet" package) look different than those produced earlier by the "prophet" package. The forecasts produced by the "prophet" package looked better - they had less variance and seemed to follow the trend more accurately.
+  
+\newpage
+  
+# Conclusions 
+  
+  The Prophet model produced forecasts with less variance than the ETS model. From a visual inspection, the Prophet model forecasts also looked like they captured the trend of the testing data more accurately. However, the ETS model outperformed the Prophet model on all measures of accuracy, on both the training and testing data sets. 
+  
+  Additionally, the residual diagnostics from the Prophet model showed that there was a significant amount of variation which was not captured by the model. The residuals showed a strong pattern and had significant autocorrelation. The ETS model performed spectacularly well on the residual diagnostics. Overall, I would choose the ETS model to make forecasts over the Prophet model.
+  
+  I also noticed that the Prophet model produced by the "prophet" package seems to produce different forecasts than the Prophet model produced by the "fable.prophet" package. The "prophet" package appears to produce a model with less variance and more accurate forecasting than the "fable.prophet" package. It is possible that using the "prophet" package produces better and more accurate forecasting results than the "fable.prophet" package. 
+
+# Improving forecasts for future analyses 
+
+  I fitted the default Prophet model to my data. It is clear that this model produced highly autocorrelated residuals. It is possible that combining the Prophet model with some interesting predictors could result in a better forecasting model with white noise residuals. Additionally, perhaps combining the EWMA and Prophet models could result in even better forecasting accuracy. 
+  
+  As noted above, the Prophet model from the "prophet" package seemed to produce better forecasts than the Prophet model from the "fable.prophet" package. For this reason, I think that the "prophet" package should be used for further analysis of the Prophet model. 
+  
+    

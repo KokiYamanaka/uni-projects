@@ -1,0 +1,232 @@
+---
+title: "Kumari_Herath_T00655616"
+author: "Kumari Herath"
+date: "2023-12-01"
+output: pdf_document
+---
+
+```{r}
+library(tsibble)
+library(fpp3)
+library(ggplot2)
+library(fable)
+library(forecast)
+library(tidyr)
+library(quantmod)
+library(fable.prophet) 
+library(prophet)
+library(fabletools)
+```
+
+```{r}
+# Download data from yahoo Finance!
+start.date = '2020-10-01' # starting date of stock
+end.date = '2023-11-29' # ending date of stock
+# Download the selected stocks from Yahoo finance using `quantmod` package
+getSymbols("^DJI", src = "yahoo", from = start.date, to = end.date, auto.assign = TRUE)
+
+# Get close price 
+Close = DJI$DJI.Close
+head(Close)
+
+# Create date variable
+DJI <- zoo::fortify.zoo(DJI)
+DJI <- DJI %>% rename(c("Date" = "Index", "Close" = "DJI.Close"))
+
+# create a tsibble 
+DJI<- as_tsibble(DJI, index = Date)
+
+# Reindex by taking care of missing values
+DJI <- DJI |>
+mutate(day = row_number()) |>
+update_tsibble(index = day, regular = TRUE) 
+
+DJI
+
+#Create train and test sets for GOOG
+DJI_train <- DJI |>  filter(yearmonth(Date) <= yearmonth("2023 Sept"))
+DJI_test <- DJI |> filter(yearmonth(Date) > yearmonth("2023 Oct"))
+```
+
+
+```{r}
+#  Make the data stationary 
+return.DJI = diff(log(Close ))
+return.DJI <- na.omit(return.DJI)
+
+DJI |> autoplot(Close)
+
+summary(DJI)
+
+```
+
+```{r}
+# Fit the models
+
+# Fit Benchmark model
+Benchmark_fit <- DJI_train |>
+  model( NAIVE(Close),
+         MEAN(Close),
+         RW(Close ~ drift())
+         )
+
+# Fit ARIMA model
+arima_fit <- DJI_train |>
+  model(ARIMA(Close))
+
+# Fit NN model
+NN_fit <- DJI_train |>
+  model(NNETAR(sqrt(Close)))
+
+report(Benchmark_fit)
+report(arima_fit)
+report(NN_fit)
+
+```
+
+```{r}
+#Get best fit ARIMA Model
+arima_fit <- DJI_train |>
+model(
+arima010 = ARIMA(Close ~ 1 + pdq(0, 1, 0)),
+arima011 = ARIMA(Close ~ 1 + pdq(0, 1, 1)),
+arima012 = ARIMA(Close ~ 1 + pdq(0, 1, 2)),
+arima013 = ARIMA(Close ~ 1 + pdq(0, 1, 3)),
+arima110 = ARIMA(Close ~ 1 + pdq(1, 1, 0)),
+arima111 = ARIMA(Close ~ 1 + pdq(1, 1, 1)),
+arima112 = ARIMA(Close ~ 1 + pdq(1, 1, 2)),
+arima113 = ARIMA(Close ~ 1 + pdq(1, 1, 3)),
+arima210 = ARIMA(Close ~ 1 + pdq(2, 1, 0)),
+arima211 = ARIMA(Close ~ 1 + pdq(2, 1, 1)),
+arima212 = ARIMA(Close ~ 1 + pdq(2, 1, 2)),
+arima213 = ARIMA(Close ~ 1 + pdq(2, 1, 3)),
+arima310 = ARIMA(Close ~ 1 + pdq(3, 1, 0)),
+arima311 = ARIMA(Close ~ 1 + pdq(3, 1, 1)),
+arima312 = ARIMA(Close ~ 1 + pdq(3, 1, 2)),
+arima313 = ARIMA(Close ~ 1 + pdq(3, 1, 3))
+)
+
+```
+
+```{r}
+arima_fit|>
+  glance() |>
+  arrange(AICc) |>
+  select(.model, AICc)
+```
+
+```{r}
+best_arima_fit <- DJI_train|>
+model(ARIMA(Close ~ 1 + pdq(0, 1, 0)))
+
+best_arima_fit |> report()
+
+```
+
+```{r}
+# get the residuals for arima model
+best_arima_fit |> gg_tsresiduals()
+augment(best_arima_fit) |> features(.innov, ljung_box, dof = 1, lag = 10)
+```
+
+```{r}
+# get the residuals for NN model
+NN_fit |> gg_tsresiduals()
+augment(NN_fit) %>% features(.resid, ljung_box, lag=10, dof=0)
+```
+
+```{r}
+# For ARIMA model:
+# ACF function shows that the residuals are white noise.
+# The residual follows a normal distribution.
+
+# For NN model:
+# ACF function shows that the residuals are white noise.
+# The residual follows a normal distribution.
+ 
+```
+
+```{r}
+accuracy <- Benchmark_fit |>
+  forecast(h = 2) |>
+  accuracy(DJI)
+
+accuracy
+
+accuracy_NN_fit <- NN_fit |>
+  forecast(h = 40 ,times = 10) |>
+  accuracy(DJI)
+
+accuracy_NN_fit
+
+#The MEAN method has the smallest RMSE value among these models.
+```
+
+```{r}
+# perform forecast on test set
+
+# For Benchmark model
+Benchmark_fit |>
+  forecast(DJI_test) |>
+  autoplot(DJI)+
+  labs(title="DJI closing price: Benchmark")
+
+# For NN model
+NN_fit |>
+  forecast(DJI_test, times= 10) |>
+  autoplot(DJI_train) +
+  labs(title="DJI closing price: NN")
+
+# I did not do a forecast for ARIMA model since the best ARIMA model is (0,1,0).
+# Therefore, I ruled out ARIMA model.
+
+```
+
+```{r}
+# forecast the models seperately for better visualization 
+mean_fit_model <- DJI_train |>
+ model(MEAN(Close))
+
+naive_fit_model <- DJI_train |>
+ model(NAIVE(Close))
+
+drift_fit_model <- DJI_train |>
+ model(RW(Close ~ drift()))
+
+mean_fit_model |>
+  forecast(DJI_test) |>
+  autoplot(DJI) +
+  labs(title="DJI closing price: MEAN")
+  
+naive_fit_model |>
+  forecast(DJI_test) |>
+  autoplot(DJI) +
+  labs(title="DJI closing price: NAIVE")
+
+drift_fit_model |>
+  forecast(DJI_test) |>
+  autoplot(DJI) +
+  labs(title="DJI closing price: DRIFT")
+```
+
+```{r}
+# Even though MEAN model has the smallest RMSE, the certainty of the forecast is less than other methods.
+# Therefore, I choose NAIVE model as the best model among these model and it has the second smallest RMSE value,
+# and NAIVE RMSE is not very larger than MEAN RMSE. 
+
+```
+
+```{r}
+# cross validation
+DJI_CV <- DJI|>
+  stretch_tsibble(.init = 300, .step = 1) |>
+  relocate(Date, .id)
+head(DJI_CV)
+
+accuracy_NAIVE <- naive_fit_model |>
+  forecast(h = 40) |>
+  accuracy(DJI)
+
+accuracy_NAIVE
+
+```
