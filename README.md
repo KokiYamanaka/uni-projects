@@ -4,7 +4,7 @@
 Well compiled 
 - Machine Learning : Determining the Optimal Regression Model for Amen Housing Dataset
 - Mathematical optimization : maximize a farmer’s profit with several resource constraints.
-- Time Series : Determining the Optimal Forecasting Model for the Dow Jones Industrial Average (DJI)
+- Time Series(https://github.com/KokiYamanaka/uni-projects/tree/main/time%20series) : Determining the Optimal Forecasting Model for the Dow Jones Industrial Average (DJI)
 -  graph theory : Most Efficient Algorithm for finding an Euler Trail in a graph: Hierholzer vs. Fleury 
 Ok 
 - computer vision : Enhancing Satellite Ship Classification: A Comparative Analysis of HOG Feature
