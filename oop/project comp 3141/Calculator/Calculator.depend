@@ -1,0 +1,132 @@
+# depslib dependency file v1.0
+1720996980 source:c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\main.cpp
+	"test_cases.h"
+	<string>
+	<iostream>
+	<vector>
+	<cctype>
+	<sstream>
+	<typeinfo>
+	"Operand.h"
+	"BasicCalculator.h"
+	"ScientificCalculator.h"
+
+1720561968 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\operand.h
+
+1720562359 source:c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\operand.cpp
+	"Operand.h"
+	<stdexcept>
+
+1720562782 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\test_cases.cpp
+	<iostream>
+	"Operand.h"
+	"test_cases.h"
+
+1720906786 source:c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\test_cases.cpp
+	<iostream>
+	<vector>
+	<cmath>
+	"Operand.h"
+	"Calculator.h"
+	"BasicCalculator.h"
+	"ScientificCalculator.h"
+	"test_cases.h"
+
+1720905146 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\test_cases.h
+
+1720635782 source:c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\calculator.cpp
+	"Calculator.h"
+
+1720919310 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\calculator.h
+	"Operand.h"
+	<vector>
+
+1720645615 source:c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\basiccalculator.cpp
+	"BasicCalculator.h"
+	<iostream>
+	<cmath>
+
+1720919298 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\basiccalculator.h
+	"Operand.h"
+	"Calculator.h"
+	<vector>
+
+1720838326 source:c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\statisticalcalculator.cpp
+
+1720844920 source:c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\scientificcalculator.cpp
+	"ScientificCalculator.h"
+	<iostream>
+	<cmath>
+
+1720843567 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\scientificcalculator.h
+	"Operand.h"
+	"Calculator.h"
+
+1720856700 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\main.cpp
+	"test_cases.h"
+	<string>
+	<iostream>
+	<vector>
+	<cctype>
+	<sstream>
+	<typeinfo>
+	"Operand.h"
+
+1720856937 c:\users\liewg\desktop\tru\comp\comp3141-object oriented programming\final project\calculator\expressionprocessor.cpp
+
+1720645615 source:c:\users\liewg\desktop\project comp 3141\calculator\basiccalculator.cpp
+	"BasicCalculator.h"
+	<iostream>
+	<cmath>
+
+1720919298 c:\users\liewg\desktop\project comp 3141\calculator\basiccalculator.h
+	"Operand.h"
+	"Calculator.h"
+	<vector>
+
+1720561968 c:\users\liewg\desktop\project comp 3141\calculator\operand.h
+
+1720919310 c:\users\liewg\desktop\project comp 3141\calculator\calculator.h
+	"Operand.h"
+	<vector>
+
+1720635782 source:c:\users\liewg\desktop\project comp 3141\calculator\calculator.cpp
+	"Calculator.h"
+
+1720996980 source:c:\users\liewg\desktop\project comp 3141\calculator\main.cpp
+	"test_cases.h"
+	<string>
+	<iostream>
+	<vector>
+	<cctype>
+	<sstream>
+	<typeinfo>
+	"Operand.h"
+	"BasicCalculator.h"
+	"ScientificCalculator.h"
+
+1720905146 c:\users\liewg\desktop\project comp 3141\calculator\test_cases.h
+
+1720843567 c:\users\liewg\desktop\project comp 3141\calculator\scientificcalculator.h
+	"Operand.h"
+	"Calculator.h"
+
+1720562359 source:c:\users\liewg\desktop\project comp 3141\calculator\operand.cpp
+	"Operand.h"
+	<stdexcept>
+
+1720844920 source:c:\users\liewg\desktop\project comp 3141\calculator\scientificcalculator.cpp
+	"ScientificCalculator.h"
+	<iostream>
+	<cmath>
+
+1720906786 source:c:\users\liewg\desktop\project comp 3141\calculator\test_cases.cpp
+	<iostream>
+	<vector>
+	<cmath>
+	"Operand.h"
+	"Calculator.h"
+	"BasicCalculator.h"
+	"ScientificCalculator.h"
+	"test_cases.h"
+
